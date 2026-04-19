@@ -63,7 +63,7 @@ def anomalies():
     return jsonify(get_anomalies())
 
 
-# ================= SIMULADOR =================
+# ================= SIMULADOR MELHORADO =================
 def simulator_loop():
 
     port = os.environ.get("PORT", "5000")
@@ -71,28 +71,44 @@ def simulator_loop():
 
     print("Simulador iniciado em:", url)
 
-    # 🔥 ESPERA SERVIDOR SUBIR (ESSENCIAL)
+    # espera o servidor subir
     time.sleep(5)
 
     temp = 25.0
     hum = 60.0
 
+    trend = 0.2  # tendência inicial
+
     while True:
         try:
-            temp += random.uniform(-0.5, 0.5)
-            hum += random.uniform(-1.0, 1.0)
+            # 🔥 tendência dinâmica
+            if random.random() < 0.1:
+                trend *= -1  # inverte direção
 
+            temp += trend + random.uniform(-0.3, 0.3)
+
+            # 🔥 umidade inversamente correlacionada
+            hum += (-trend * 2) + random.uniform(-1.5, 1.5)
+
+            # 🔥 limites realistas
             temp = max(10, min(40, temp))
             hum = max(20, min(90, hum))
+
+            # 🔥 INJEÇÃO DE ANOMALIA (visual forte)
+            if random.random() < 0.08:
+                print("⚠️ GERANDO ANOMALIA!")
+
+                temp += random.choice([-8, 8])
+                hum += random.choice([-20, 20])
 
             data = {
                 "temperature": round(temp, 2),
                 "humidity": round(hum, 2)
             }
 
-            r = requests.post(url, json=data, timeout=3)
+            response = requests.post(url, json=data, timeout=3)
 
-            print("OK:", data, "|", r.status_code)
+            print("OK:", data, "|", response.status_code)
 
         except Exception as e:
             print("Erro simulador:", e)
@@ -105,7 +121,7 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
 
-    # 🔥 inicia simulador COM DELAY
+    # inicia simulador em background
     threading.Thread(target=simulator_loop, daemon=True).start()
 
     print("Servidor rodando na porta:", port)
