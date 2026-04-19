@@ -79,7 +79,14 @@ def anomalies():
 # ================= SIMULADOR INTERNO =================
 def simulator_loop():
 
-    URL = "http://127.0.0.1:5000/sensor"
+    # 🔥 PEGA PORTA DINÂMICA DO RENDER
+    port = os.environ.get("PORT", "5000")
+
+    # 🔥 URL CORRETA PARA FUNCIONAR NO RENDER
+    URL = f"http://127.0.0.1:{port}/sensor"
+
+    print("Simulador iniciado!")
+    print("URL usada:", URL)
 
     temperature = 25.0
     humidity = 60.0
@@ -99,9 +106,11 @@ def simulator_loop():
                 "humidity": round(humidity, 2)
             }
 
-            requests.post(URL, json=data, timeout=2)
+            print("Enviando:", data)
 
-            print("Simulador interno:", data)
+            response = requests.post(URL, json=data, timeout=2)
+
+            print("Status:", response.status_code)
 
         except Exception as e:
             print("Erro no simulador:", e)
@@ -115,7 +124,9 @@ if __name__ == "__main__":
     # inicia simulador em background
     threading.Thread(target=simulator_loop, daemon=True).start()
 
-    # porta dinâmica (Render)
+    # porta dinâmica do Render
     port = int(os.environ.get("PORT", 5000))
+
+    print("Servidor iniciando na porta:", port)
 
     app.run(host="0.0.0.0", port=port)
