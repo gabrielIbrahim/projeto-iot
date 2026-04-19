@@ -7,8 +7,8 @@ import random
 import requests
 import os
 
-from models import init_db, insert_data, get_last_data
-from ml_model import predict_next
+from models import init_db, save_data, get_data
+from ml_model import predict_temperature, predict_humidity
 from anomaly_model import detect_anomaly, save_anomaly, get_anomalies
 
 app = Flask(__name__)
@@ -37,7 +37,8 @@ def receive_data():
     if temperature is None or humidity is None:
         return jsonify({"error": "Dados incompletos"}), 400
 
-    insert_data(temperature, humidity)
+    # salva no banco
+    save_data(temperature, humidity)
 
     # detectar anomalia
     if detect_anomaly(temperature, humidity):
@@ -48,21 +49,21 @@ def receive_data():
 
 # ================= ROTA DADOS =================
 @app.route("/data")
-def get_data():
-    data = get_last_data(limit=20)
-    return jsonify(data)
+def data():
+    return jsonify(get_data())
 
 
 # ================= ROTA PREVISÃO =================
 @app.route("/predict")
 def predict():
     try:
-        result = predict_next()
+        temp_pred = predict_temperature()
+        hum_pred = predict_humidity()
 
-        if not result:
-            return jsonify({"error": "Dados insuficientes"}), 400
-
-        return jsonify(result)
+        return jsonify({
+            "temperature": temp_pred,
+            "humidity": hum_pred
+        })
 
     except Exception as e:
         print("Erro na previsão:", e)
@@ -78,7 +79,6 @@ def anomalies():
 # ================= SIMULADOR INTERNO =================
 def simulator_loop():
 
-    # URL local (funciona dentro do próprio servidor)
     URL = "http://127.0.0.1:5000/sensor"
 
     temperature = 25.0
@@ -86,9 +86,11 @@ def simulator_loop():
 
     while True:
         try:
+            # variação suave
             temperature += random.uniform(-0.5, 0.5)
             humidity += random.uniform(-1.0, 1.0)
 
+            # limites realistas
             temperature = max(10, min(40, temperature))
             humidity = max(20, min(90, humidity))
 
