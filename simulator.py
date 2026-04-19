@@ -4,7 +4,7 @@ import random
 
 # ================= CONFIG =================
 
-URL = "http://127.0.0.1:5000/sensor"  # ALTERAR DEPOIS DO DEPLOY
+URL = "https://projeto-iot-8fto.onrender.com/sensor"  # ALTERAR DEPOIS DO DEPLOY
 
 # valores iniciais
 temperature = 25.0
