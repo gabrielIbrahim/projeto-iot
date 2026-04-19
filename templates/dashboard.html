@@ -1,338 +1,359 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<title>Dashboard IoT - Métricas Climáticas</title>
+    <meta charset="UTF-8">
+    <title>Dashboard IoT - Métricas Climáticas</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/raphael"></script>
-<script src="https://cdn.jsdelivr.net/npm/justgage"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/raphael"></script>
+    <script src="https://cdn.jsdelivr.net/npm/justgage"></script>
 
-<style>
-body {
-background: #121212;
-color: white;
-font-family: Arial;
-margin: 0;
-}
+    <style>
+        body {
+            background: #121212;
+            color: white;
+            font-family: Arial;
+            margin: 0;
+        }
 
-header {
-background: #7a00ff;
-padding: 20px;
-text-align: center;
-font-size: 26px;
-font-weight: bold;
-}
+        header {
+            background: #7a00ff;
+            padding: 20px;
+            text-align: center;
+            font-size: 26px;
+            font-weight: bold;
+        }
 
-.alert-banner {
-display: none;
-background: red;
-text-align: center;
-padding: 10px;
-font-weight: bold;
-}
+        .alert-banner {
+            display: none;
+            background: red;
+            text-align: center;
+            padding: 10px;
+            font-weight: bold;
+        }
 
-.container {
-display: flex;
-flex-direction: column;
-align-items: center;
-gap: 30px;
-padding: 20px;
-}
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 20px;
+        }
 
-.gauges {
-display: flex;
-gap: 40px;
-}
+        .gauges {
+            display: flex;
+            gap: 40px;
+        }
 
-.gauge-box, .predictions-box {
-background: #1e1e1e;
-padding: 20px;
-border-radius: 15px;
-box-shadow: 0 0 20px rgba(0,0,0,0.6);
-min-width: 250px;
-}
+        .gauge-box,
+        .predictions-box {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+            min-width: 250px;
+        }
 
-.chart-container {
-width: 900px;
-height: 320px;
-background: #1e1e1e;
-padding: 20px;
-border-radius: 15px;
-}
+        .chart-container {
+            width: 900px;
+            height: 320px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 15px;
+        }
 
-.anomaly-container {
-width: 900px;
-background: #1e1e1e;
-padding: 20px;
-border-radius: 15px;
-display: flex;
-flex-direction: column;
-gap: 15px;
-}
+        .anomaly-container {
+            width: 900px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
 
-.anomaly-chart-box {
-height: 250px;
-}
+        .anomaly-chart-box {
+            height: 250px;
+        }
 
-.anomaly-history {
-max-height: 150px;
-overflow-y: auto;
-background: #111;
-padding: 10px;
-border-radius: 10px;
-font-size: 13px;
-}
-
-</style>
+        .anomaly-history {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #111;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+    </style>
 </head>
 
 <body>
 
-<header>🌌 Dashboard IoT - Métricas Climáticas</header>
+    <header>🌌 Dashboard IoT - Métricas Climáticas</header>
 
-<div class="alert-banner" id="alertBanner">
-⚠️ ANOMALIA DETECTADA ⚠️
-</div>
+    <div class="alert-banner" id="alertBanner">
+        ⚠️ ANOMALIA DETECTADA ⚠️
+    </div>
 
-<div class="container">
+    <div class="container">
 
-<div class="gauges">
+        <div class="gauges">
 
-<div class="gauge-box">
-<h3>🌡️ Temperatura</h3>
-<div id="tempGauge"></div>
-<p id="tempValue"></p>
-</div>
+            <div class="gauge-box">
+                <h3>🌡️ Temperatura</h3>
+                <div id="tempGauge"></div>
+                <p id="tempValue"></p>
+            </div>
 
-<div class="gauge-box">
-<h3>💧 Umidade</h3>
-<div id="humGauge"></div>
-<p id="humValue"></p>
-</div>
+            <div class="gauge-box">
+                <h3>💧 Umidade</h3>
+                <div id="humGauge"></div>
+                <p id="humValue"></p>
+            </div>
 
-<div class="predictions-box">
-<h3>🔮 Previsão ML</h3>
-<p id="predTemp"></p>
-<p id="predHum"></p>
-</div>
+            <div class="predictions-box">
+                <h3>🔮 Previsão ML</h3>
+                <p id="predTemp"></p>
+                <p id="predHum"></p>
+            </div>
 
-</div>
+        </div>
 
-<div class="chart-container">
-<h3>📈 Histórico + Previsão vs Real</h3>
-<canvas id="historyChart"></canvas>
-</div>
+        <div class="chart-container">
+            <h3>📈 Histórico + Previsão vs Real</h3>
+            <canvas id="historyChart"></canvas>
+        </div>
 
-<div class="anomaly-container">
-<h3>🚨 Histórico de Anomalias</h3>
+        <div class="anomaly-container">
+            <h3>🚨 Histórico de Anomalias</h3>
 
-<div class="anomaly-chart-box">
-<canvas id="anomalyChart"></canvas>
-</div>
+            <div class="anomaly-chart-box">
+                <canvas id="anomalyChart"></canvas>
+            </div>
 
-<div class="anomaly-history" id="anomalyHistory">
-Nenhuma anomalia registrada.
-</div>
+            <div class="anomaly-history" id="anomalyHistory">
+                Nenhuma anomalia registrada.
+            </div>
 
-</div>
+        </div>
 
-</div>
+    </div>
 
-<script>
+    <script>
 
-// ================= VELOCÍMETROS =================
+        // ================= VELOCÍMETROS =================
 
-var tempGauge = new JustGage({
-id: "tempGauge",
-value: 0,
-min: 0,
-max: 50,
-levelColors: ["#00ccff", "#0066ff"],
-pointer: true
-});
+        var tempGauge = new JustGage({
+            id: "tempGauge",
+            value: 0,
+            min: 0,
+            max: 50,
+            levelColors: ["#00ccff", "#0066ff"],
+            pointer: true
+        });
 
-var humGauge = new JustGage({
-id: "humGauge",
-value: 0,
-min: 0,
-max: 100,
-levelColors: ["#00ff99", "#00994d"],
-pointer: true
-});
+        var humGauge = new JustGage({
+            id: "humGauge",
+            value: 0,
+            min: 0,
+            max: 100,
+            levelColors: ["#00ff99", "#00994d"],
+            pointer: true
+        });
 
-// ================= GRÁFICO PRINCIPAL =================
+        // ================= GRÁFICO PRINCIPAL =================
 
-const historyChart = new Chart(
-document.getElementById("historyChart"),
-{
-type: "line",
-data: {
-labels: [],
-datasets: [
-{
-label: "Temp Real",
-data: [],
-borderColor: "#00ccff",
-tension: 0.3
-},
-{
-label: "Temp Prevista",
-data: [],
-borderColor: "#00ccff",
-borderDash: [8,5],
-tension: 0.3
-},
-{
-label: "Umid Real",
-data: [],
-borderColor: "#00ff99",
-tension: 0.3
-},
-{
-label: "Umid Prevista",
-data: [],
-borderColor: "#00ff99",
-borderDash: [8,5],
-tension: 0.3
-}
-]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false
-}
-}
-);
+        const historyChart = new Chart(
+            document.getElementById("historyChart"),
+            {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: "Temp Real",
+                            data: [],
+                            borderColor: "#00ccff",
+                            tension: 0.3
+                        },
+                        {
+                            label: "Temp Prevista",
+                            data: [],
+                            borderColor: "#00ccff",
+                            borderDash: [8, 5],
+                            tension: 0.3
+                        },
+                        {
+                            label: "Umid Real",
+                            data: [],
+                            borderColor: "#00ff99",
+                            tension: 0.3
+                        },
+                        {
+                            label: "Umid Prevista",
+                            data: [],
+                            borderColor: "#00ff99",
+                            borderDash: [8, 5],
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            }
+        );
 
-// ================= GRÁFICO DE ANOMALIAS =================
+        // ================= GRÁFICO DE ANOMALIAS =================
 
-const anomalyChart = new Chart(
-document.getElementById("anomalyChart"),
-{
-type: "line",
-data: {
-labels: [],
-datasets: [
-{
-label: "Temp Anomalia",
-data: [],
-borderColor: "orange",
-tension: 0.3
-},
-{
-label: "Umid Anomalia",
-data: [],
-borderColor: "red",
-tension: 0.3
-}
-]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false
-}
-}
-);
+        const anomalyChart = new Chart(
+            document.getElementById("anomalyChart"),
+            {
+                type: "line",
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: "Temp Anomalia",
+                            data: [],
+                            borderColor: "orange",
+                            tension: 0.3
+                        },
+                        {
+                            label: "Umid Anomalia",
+                            data: [],
+                            borderColor: "red",
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            }
+        );
 
-// ================= ATUALIZAÇÃO =================
+        // ================= ATUALIZAÇÃO =================
 
-async function fetchAll() {
+        async function fetchAll() {
 
-let [dataRes, predRes, anomRes] = await Promise.all([
-fetch("/data"),
-fetch("/predict"),
-fetch("/anomalies")
-]);
+            try {
 
-let data = await dataRes.json();
-let pred = await predRes.json();
-let anomalies = await anomRes.json();
+                let [dataRes, predRes, anomRes] = await Promise.all([
+                    fetch("/data"),
+                    fetch("/predict"),
+                    fetch("/anomalies")
+                ]);
 
-if (data.length === 0) return;
+                // valida resposta
+                if (!dataRes.ok || !predRes.ok || !anomRes.ok) {
+                    console.error("Erro ao buscar dados da API");
+                    return;
+                }
 
-let labels = data.map(d => d.timestamp);
-let temps = data.map(d => d.temperature);
-let hums = data.map(d => d.humidity);
+                // parse seguro
+                let data = await dataRes.json().catch(() => []);
+                let pred = await predRes.json().catch(() => null);
+                let anomalies = await anomRes.json().catch(() => []);
 
-// REAL
-historyChart.data.labels = labels;
-historyChart.data.datasets[0].data = temps;
-historyChart.data.datasets[2].data = hums;
+                if (!data || data.length === 0) return;
 
-// PREVISÃO (linha completa)
-let predTempLine = [...temps];
-predTempLine[predTempLine.length - 1] = pred.temperature.predictions[0];
+                let labels = data.map(d => d.timestamp);
+                let temps = data.map(d => d.temperature);
+                let hums = data.map(d => d.humidity);
 
-let predHumLine = [...hums];
-predHumLine[predHumLine.length - 1] = pred.humidity.predictions[0];
+                // valores seguros de previsão
+                let predTempVal = pred?.temperature?.predictions?.[0] ?? temps[temps.length - 1];
+                let predHumVal = pred?.humidity?.predictions?.[0] ?? hums[hums.length - 1];
 
-historyChart.data.datasets[1].data = predTempLine;
-historyChart.data.datasets[3].data = predHumLine;
+                // REAL
+                historyChart.data.labels = labels;
+                historyChart.data.datasets[0].data = temps;
+                historyChart.data.datasets[2].data = hums;
 
-historyChart.update();
+                // PREVISÃO
+                let predTempLine = [...temps];
+                predTempLine[predTempLine.length - 1] = predTempVal;
 
-// VELOCÍMETROS
-let last = data[data.length - 1];
+                let predHumLine = [...hums];
+                predHumLine[predHumLine.length - 1] = predHumVal;
 
-tempGauge.refresh(last.temperature);
-humGauge.refresh(last.humidity);
+                historyChart.data.datasets[1].data = predTempLine;
+                historyChart.data.datasets[3].data = predHumLine;
 
-document.getElementById("tempValue").innerText =
-"Atual: " + last.temperature.toFixed(2) + " °C";
+                historyChart.update();
 
-document.getElementById("humValue").innerText =
-"Atual: " + last.humidity.toFixed(2) + " %";
+                // VELOCÍMETROS
+                let last = data[data.length - 1];
 
-document.getElementById("predTemp").innerText =
-"Próxima Temp: " + pred.temperature.predictions[0].toFixed(2) + " °C";
+                tempGauge.refresh(last.temperature);
+                humGauge.refresh(last.humidity);
 
-document.getElementById("predHum").innerText =
-"Próxima Umid: " + pred.humidity.predictions[0].toFixed(2) + " %";
+                document.getElementById("tempValue").innerText =
+                    "Atual: " + last.temperature.toFixed(2) + " °C";
 
-// ================= ANOMALIAS =================
+                document.getElementById("humValue").innerText =
+                    "Atual: " + last.humidity.toFixed(2) + " %";
 
-if (anomalies.length > 0) {
+                document.getElementById("predTemp").innerText =
+                    "Próxima Temp: " + predTempVal.toFixed(2) + " °C";
 
-document.getElementById("alertBanner").style.display = "block";
+                document.getElementById("predHum").innerText =
+                    "Próxima Umid: " + predHumVal.toFixed(2) + " %";
 
-let anomLabels = anomalies.map(a => a.timestamp);
-let anomTemp = anomalies.map(a => a.temperature);
-let anomHum = anomalies.map(a => a.humidity);
+                // ================= ANOMALIAS =================
 
-anomalyChart.data.labels = anomLabels;
-anomalyChart.data.datasets[0].data = anomTemp;
-anomalyChart.data.datasets[1].data = anomHum;
-anomalyChart.update();
+                if (anomalies && anomalies.length > 0) {
 
-// HISTÓRICO TEXTUAL
-let historyDiv = document.getElementById("anomalyHistory");
-historyDiv.innerHTML = "";
+                    document.getElementById("alertBanner").style.display = "block";
 
-anomalies.slice(-20).reverse().forEach(a => {
-historyDiv.innerHTML +=
-`<div>⏱ ${a.timestamp} | 🌡 ${a.temperature.toFixed(1)}°C | 💧 ${a.humidity.toFixed(1)}%</div>`;
-});
+                    let anomLabels = anomalies.map(a => a.timestamp);
+                    let anomTemp = anomalies.map(a => a.temperature);
+                    let anomHum = anomalies.map(a => a.humidity);
 
-} else {
+                    anomalyChart.data.labels = anomLabels;
+                    anomalyChart.data.datasets[0].data = anomTemp;
+                    anomalyChart.data.datasets[1].data = anomHum;
+                    anomalyChart.update();
 
-document.getElementById("alertBanner").style.display = "none";
-anomalyChart.data.labels = [];
-anomalyChart.data.datasets[0].data = [];
-anomalyChart.data.datasets[1].data = [];
-anomalyChart.update();
+                    // histórico textual
+                    let historyDiv = document.getElementById("anomalyHistory");
+                    historyDiv.innerHTML = "";
 
-document.getElementById("anomalyHistory").innerHTML =
-"Nenhuma anomalia registrada.";
+                    anomalies.slice(-20).reverse().forEach(a => {
+                        historyDiv.innerHTML +=
+                            `<div>⏱ ${a.timestamp} | 🌡 ${a.temperature.toFixed(1)}°C | 💧 ${a.humidity.toFixed(1)}%</div>`;
+                    });
 
-}
+                } else {
 
-}
+                    document.getElementById("alertBanner").style.display = "none";
 
-setInterval(fetchAll, 2000);
-fetchAll();
+                    anomalyChart.data.labels = [];
+                    anomalyChart.data.datasets[0].data = [];
+                    anomalyChart.data.datasets[1].data = [];
+                    anomalyChart.update();
 
-</script>
+                    document.getElementById("anomalyHistory").innerHTML =
+                        "Nenhuma anomalia registrada.";
+
+                }
+
+            } catch (error) {
+                console.error("Erro geral:", error);
+            }
+
+        }
+
+        // intervalo seguro para deploy
+        setInterval(fetchAll, 3000);
+        fetchAll();
+
+    </script>
 
 </body>
+
 </html>

@@ -1,12 +1,41 @@
 import sqlite3
-import pandas as pd
-
-from anomaly_model import detect_anomaly, save_anomaly
 
 DB_NAME = "database.db"
 
 
-def insert_data(temp, hum):
+# ================= CRIAR BANCO =================
+def init_db():
+
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # tabela principal
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sensor_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            temperature REAL,
+            humidity REAL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # tabela de anomalias
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS anomalies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            temperature REAL,
+            humidity REAL,
+            description TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+# ================= SALVAR DADOS =================
+def save_data(temperature, humidity):
 
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -14,52 +43,38 @@ def insert_data(temp, hum):
     cursor.execute("""
         INSERT INTO sensor_data (temperature, humidity)
         VALUES (?, ?)
-    """, (temp, hum))
+    """, (temperature, humidity))
 
     conn.commit()
     conn.close()
 
-    # verificar anomalia
-    if detect_anomaly(temp, hum):
-        save_anomaly(temp, hum)
 
-
-def get_recent_data(limit=20):
+# ================= BUSCAR DADOS =================
+def get_data(limit=50):
 
     conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
 
-    df = pd.read_sql_query(
-        f"""
-        SELECT *
+    cursor.execute("""
+        SELECT id, temperature, humidity, timestamp
         FROM sensor_data
         ORDER BY id DESC
-        LIMIT {limit}
-        """,
-        conn
-    )
+        LIMIT ?
+    """, (limit,))
 
+    rows = cursor.fetchall()
     conn.close()
 
-    return df.iloc[::-1]
+    # inverter (mais antigo → mais novo)
+    rows.reverse()
 
+    result = []
+    for row in rows:
+        result.append({
+            "id": row[0],
+            "temperature": row[1],
+            "humidity": row[2],
+            "timestamp": row[3]
+        })
 
-def get_latest_status():
-
-    conn = sqlite3.connect(DB_NAME)
-
-    df = pd.read_sql_query(
-        """
-        SELECT *
-        FROM sensor_data
-        ORDER BY id DESC
-        LIMIT 1
-        """,
-        conn
-    )
-
-    conn.close()
-
-    if df.empty:
-        return {}
-
-    return df.iloc[0].to_dict()
+    return result

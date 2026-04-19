@@ -1,100 +1,86 @@
 import sqlite3
-import pandas as pd
 import numpy as np
-
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-
 
 DB_NAME = "database.db"
 
 
-# =========================
-# Carregar dados do banco
-# =========================
-def load_data():
+# ================= CARREGAR DADOS =================
+def load_data(limit=50):
+
     conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT temperature, humidity
+        FROM sensor_data
+        ORDER BY id DESC
+        LIMIT ?
+    """, (limit,))
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    if len(rows) < 5:
+        return None
+
+    rows.reverse()
+
+    temps = [r[0] for r in rows]
+    hums = [r[1] for r in rows]
+
+    return temps, hums
+
+
+# ================= PREVISÃO TEMPERATURA =================
+def predict_temperature():
+
+    data = load_data()
+
+    if data is None:
+        return {"predictions": [0]}
+
+    temps, _ = data
 
     try:
-        df = pd.read_sql_query(
-            "SELECT temperature, humidity FROM sensor_data ORDER BY id",
-            conn
-        )
-    except Exception:
-        df = pd.DataFrame()
-
-    conn.close()
-    return df
-
-
-# =========================
-# Criar janelas temporais
-# =========================
-def create_windows(series, window_size=3):
-    X = []
-    y = []
-
-    for i in range(len(series) - window_size):
-        X.append(series[i:i + window_size])
-        y.append(series[i + window_size])
-
-    return np.array(X), np.array(y)
-
-
-# =========================
-# Treinar modelo e prever
-# =========================
-def train_and_predict(steps=5):
-
-    df = load_data()
-
-    if df.empty or len(df) < 10:
-        return {
-            "error": "Dados insuficientes para previsão"
-        }
-
-    results = {}
-
-    for column in ["temperature", "humidity"]:
-
-        data = df[column].values
-
-        X, y = create_windows(data, window_size=3)
-
-        if len(X) < 5:
-            return {"error": "Poucas amostras"}
+        X = np.arange(len(temps)).reshape(-1, 1)
+        y = np.array(temps)
 
         model = LinearRegression()
         model.fit(X, y)
 
-        # ===== erro do modelo =====
-        y_pred = model.predict(X)
-        rmse = float(np.sqrt(mean_squared_error(y, y_pred)))
+        next_x = np.array([[len(temps)]])
+        prediction = model.predict(next_x)[0]
 
-        # ===== previsão multi-passo =====
-        last_window = data[-3:].copy()
-        predictions = []
+        return {"predictions": [float(prediction)]}
 
-        for _ in range(steps):
-            next_value = model.predict([last_window])[0]
-            predictions.append(float(next_value))
+    except Exception as e:
+        print("Erro ML temperatura:", e)
+        return {"predictions": [temps[-1]]}
 
-            last_window = np.roll(last_window, -1)
-            last_window[-1] = next_value
 
-        results[column] = {
-            "current": float(data[-1]),
-            "predictions": predictions,
-            "confidence_interval": [
-                float(predictions[0] - rmse),
-                float(predictions[0] + rmse)
-            ],
-            "rmse": rmse
-        }
+# ================= PREVISÃO UMIDADE =================
+def predict_humidity():
 
-    return {
-        "temperature": results["temperature"],
-        "humidity": results["humidity"],
-        "steps_ahead": steps,
-        "samples_used": int(len(df))
-    }
+    data = load_data()
+
+    if data is None:
+        return {"predictions": [0]}
+
+    _, hums = data
+
+    try:
+        X = np.arange(len(hums)).reshape(-1, 1)
+        y = np.array(hums)
+
+        model = LinearRegression()
+        model.fit(X, y)
+
+        next_x = np.array([[len(hums)]])
+        prediction = model.predict(next_x)[0]
+
+        return {"predictions": [float(prediction)]}
+
+    except Exception as e:
+        print("Erro ML umidade:", e)
+        return {"predictions": [hums[-1]]}
